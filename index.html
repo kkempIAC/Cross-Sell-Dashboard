@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-Sell Revenue Opportunity Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0B1120; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #F1F5F9; }
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+  .header { margin-bottom: 28px; }
+  .header-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .header-bar { width: 8px; height: 32px; border-radius: 4px; background: linear-gradient(180deg, #3B82F6, #8B5CF6); }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .subtitle { color: #94A3B8; font-size: 14px; padding-left: 18px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #111827; border-radius: 10px; padding: 4px; border: 1px solid #1E293B; }
+  .tab { flex: 1; padding: 10px 0; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; background: transparent; color: #94A3B8; transition: all 0.2s; font-family: inherit; }
+  .tab.active { background: #3B82F6; color: #fff; }
+  .tab:hover:not(.active) { color: #F1F5F9; }
+
+  /* KPI Grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: #111827; border: 1px solid #1E293B; border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
+  .kpi-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .kpi-label { font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; }
+  .kpi-sub { font-size: 11px; color: #64748B; margin-top: 2px; }
+
+  /* Cards */
+  .card { background: #111827; border: 1px solid #1E293B; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .card-title { font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-subtitle { font-size: 11px; color: #64748B; margin-top: -10px; margin-bottom: 14px; }
+
+  /* Scenario Builder */
+  .scenario { background: linear-gradient(135deg, #111827 0%, #1a1f35 100%); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .scenario-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .slider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .slider-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .slider-label { font-size: 13px; color: #94A3B8; }
+  .slider-value { font-size: 16px; font-weight: 700; }
+  .slider-value.blue { color: #3B82F6; }
+  .slider-value.green { color: #10B981; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #1E293B; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid #0B1120; }
+  input[type="range"].blue::-webkit-slider-thumb { background: #3B82F6; }
+  input[type="range"].green::-webkit-slider-thumb { background: #10B981; }
+  input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid #0B1120; }
+  input[type="range"].blue::-moz-range-thumb { background: #3B82F6; }
+  input[type="range"].green::-moz-range-thumb { background: #10B981; }
+  .slider-range { display: flex; justify-content: space-between; font-size: 10px; color: #64748B; margin-top: 4px; }
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .result-box { border-radius: 10px; padding: 14px 16px; text-align: center; }
+  .result-label { font-size: 10px; color: #94A3B8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .result-value { font-size: 22px; font-weight: 700; }
+
+  /* Charts */
+  .bar-chart { width: 100%; }
+  .bar-row { display: flex; align-items: center; margin-bottom: 8px; }
+  .bar-label { width: 140px; flex-shrink: 0; font-size: 12px; color: #94A3B8; text-align: right; padding-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 22px; background: #1E293B; border-radius: 6px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 10px; font-weight: 600; color: #fff; min-width: 40px; }
+  .bar-amount { margin-left: 10px; font-size: 12px; font-weight: 600; color: #F1F5F9; width: 70px; flex-shrink: 0; text-align: right; }
+
+  /* Donut charts */
+  .donut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .donut-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px 0; }
+  .donut-svg { width: 130px; height: 130px; }
+  .donut-legend { font-size: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-text { color: #94A3B8; }
+  .legend-val { color: #F1F5F9; font-weight: 600; margin-left: 4px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 8px; color: #64748B; font-weight: 600; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #1E293B; }
+  th.right { text-align: right; }
+  td { padding: 10px 8px; border-bottom: 1px solid rgba(30,41,59,0.15); }
+  td.right { text-align: right; }
+  td.muted { color: #94A3B8; }
+  td.bold { font-weight: 600; }
+  td.green { color: #10B981; font-weight: 600; }
+  td.amber { color: #F59E0B; font-weight: 600; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 10px; }
+  tr.total-row { border-top: 2px solid #1E293B; }
+  tr.total-row td { font-weight: 700; }
+
+  /* Producer cards */
+  .producer-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(30,41,59,0.15); }
+  .producer-row:last-child { border-bottom: none; }
+  .producer-info { display: flex; align-items: center; gap: 12px; }
+  .producer-rank { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .producer-name { font-weight: 600; font-size: 14px; }
+  .producer-count { font-size: 12px; color: #64748B; margin-top: 2px; }
+  .producer-premium { text-align: right; }
+  .producer-premium-val { font-weight: 600; color: #10B981; font-size: 16px; }
+  .producer-premium-label { font-size: 11px; color: #64748B; }
+
+  /* Footer */
+  .footer { margin-top: 24px; padding: 14px 0; border-top: 1px solid #1E293B; text-align: center; font-size: 11px; color: #64748B; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 600px) {
+    .slider-grid { grid-template-columns: 1fr; gap: 16px; }
+    .donut-grid { grid-template-columns: 1fr; }
+    .bar-label { width: 100px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-row">
+      <div class="header-bar"></div>
+      <h1>Cross-Sell Revenue Opportunity</h1>
+    </div>
+    <p class="subtitle">Monoline Client Analysis & Pipeline Projections</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+    <button class="tab" data-tab="products" onclick="switchTab('products')">Products</button>
+    <button class="tab" data-tab="producers" onclick="switchTab('producers')">Producers</button>
+  </div>
+
+  <!-- ==================== OVERVIEW TAB ==================== -->
+  <div id="tab-overview">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-bar" style="background:#3B82F6"></div>
+        <div class="kpi-label">Total Accounts</div>
+        <div class="kpi-value">564</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-bar" style="background:#EF4444"></div>
+        <div class="kpi-label">Monoline Clients</div>
+        <div class="kpi-value">440</div>
+        <div class="kpi-sub">78.0% of book</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-bar" style="background:#10B981"></div>
+        <div class="kpi-label">Premium Potential</div>
+        <div class="kpi-value">$3.6M</div>
+        <div class="kpi-sub">at 100% close</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-bar" style="background:#8B5CF6"></div>
+        <div class="kpi-label">Commission Potential</div>
+        <div class="kpi-value">$430K</div>
+        <div class="kpi-sub">at 12% avg</div>
+      </div>
+    </div>
+
+    <!-- Donut Charts -->
+    <div class="donut-grid">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Book Composition</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#1E293B" stroke-width="18"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#10B981" stroke-width="18"
+              stroke-dasharray="301.6" stroke-dashoffset="0" transform="rotate(-90 60 60)"
+              style="transition: stroke-dashoffset 0.5s"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#EF4444" stroke-width="18"
+              stroke-dasharray="301.6" stroke-dashoffset="66.3" transform="rotate(-90 60 60)"
+              style="transition: stroke-dashoffset 0.5s"/>
+            <text x="60" y="56" text-anchor="middle" fill="#F1F5F9" font-size="18" font-weight="700">78%</text>
+            <text x="60" y="72" text-anchor="middle" fill="#64748B" font-size="9">monoline</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#EF4444"></div><span class="legend-text">Monoline<span class="legend-val"> 440</span></span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div><span class="legend-text">Multi-line<span class="legend-val"> 124</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Monoline by Type</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#1E293B" stroke-width="18"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#10B981" stroke-width="18"
+              stroke-dasharray="301.6" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#3B82F6" stroke-width="18"
+              stroke-dasharray="301.6" stroke-dashoffset="69.9" transform="rotate(-90 60 60)"/>
+            <text x="60" y="56" text-anchor="middle" fill="#F1F5F9" font-size="18" font-weight="700">440</text>
+            <text x="60" y="72" text-anchor="middle" fill="#64748B" font-size="9">accounts</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div><span class="legend-text">Personal<span class="legend-val"> 336</span></span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div><span class="legend-text">Commercial<span class="legend-val"> 102</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario Builder -->
+    <div class="scenario">
+      <div class="scenario-title">⚡ Revenue Scenario Builder</div>
+      <div class="slider-grid">
+        <div>
+          <div class="slider-header">
+            <span class="slider-label">Penetration Rate</span>
+            <span class="slider-value blue" id="pen-val">40%</span>
+          </div>
+          <input type="range" class="blue" min="10" max="80" value="40" id="pen-slider" oninput="updateScenario()">
+          <div class="slider-range"><span>10%</span><span>80%</span></div>
+        </div>
+        <div>
+          <div class="slider-header">
+            <span class="slider-label">Close Rate</span>
+            <span class="slider-value green" id="close-val">20%</span>
+          </div>
+          <input type="range" class="green" min="5" max="50" value="20" id="close-slider" oninput="updateScenario()">
+          <div class="slider-range"><span>5%</span><span>50%</span></div>
+        </div>
+      </div>
+      <div class="result-grid">
+        <div class="result-box" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)">
+          <div class="result-label">Projected New Premium</div>
+          <div class="result-value" style="color:#10B981" id="res-premium">$286,351</div>
+        </div>
+        <div class="result-box" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)">
+          <div class="result-label">Projected Commission</div>
+          <div class="result-value" style="color:#F59E0B" id="res-commission">$34,362</div>
+        </div>
+        <div class="result-box" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2)">
+          <div class="result-label">Policies Sold</div>
+          <div class="result-value" style="color:#3B82F6" id="res-policies">112</div>
+        </div>
+        <div class="result-box" style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2)">
+          <div class="result-label">Accounts Targeted</div>
+          <div class="result-value" style="color:#8B5CF6" id="res-accounts">176</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monoline Table -->
+    <div class="card">
+      <div class="card-title">Monoline Accounts by Current Policy Type</div>
+      <table>
+        <thead><tr><th>Policy Type</th><th class="right">Clients</th><th class="right">Current Premium</th></tr></thead>
+        <tbody id="monoline-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== PRODUCTS TAB ==================== -->
+  <div id="tab-products" class="hidden">
+    <div class="card">
+      <div class="card-title">Premium Opportunity by Cross-Sell Product</div>
+      <div class="card-subtitle" id="products-subtitle">Adjusted for 40% penetration × 20% close rate</div>
+      <div id="product-bars" class="bar-chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Cross-Sell Product Detail</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Product</th><th class="right">Avg Premium</th><th class="right">Opps</th><th class="right">Proj. Premium</th><th class="right">Proj. Commission</th></tr></thead>
+          <tbody id="product-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Average Premium by Line of Business</div>
+      <div class="card-subtitle">Based on your current book averages (Life adjusted to $500 industry est.)</div>
+      <div id="avg-premium-bars" class="bar-chart"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PRODUCERS TAB ==================== -->
+  <div id="tab-producers" class="hidden">
+    <div class="card">
+      <div class="card-title">Monoline Accounts by Producer</div>
+      <div class="card-subtitle">Cross-sell pipeline assigned to each producer</div>
+      <div id="producer-bars" class="bar-chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Producer Detail</div>
+      <div id="producer-detail"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Analysis based on 564 accounts · 1,401 cross-sell opportunities identified · 12% avg commission rate
+  </div>
+</div>
+
+<script>
+const DATA = {
+  total_opps: 1401,
+  total_premium_potential: 3579390,
+  total_commission_potential: 429526,
+  monoline_accounts: 440,
+  by_product: [
+    {name:"Personal Auto",count:294,premium:877884,commission:105346},
+    {name:"Umbrella",count:322,premium:587328,commission:70479},
+    {name:"Homeowners",count:148,premium:584304,commission:70116},
+    {name:"Workers' Comp",count:93,premium:524148,commission:62897},
+    {name:"Commercial Auto",count:93,premium:431706,commission:51804},
+    {name:"Flood",count:190,premium:224010,commission:26881},
+    {name:"Commercial Property",count:89,premium:223924,commission:26870},
+    {name:"Life",count:154,premium:77000,commission:9240},
+    {name:"General Liability",count:18,premium:49086,commission:5890}
+  ],
+  by_current_lob: [
+    {name:"Homeowners",count:155,premium:649301},
+    {name:"General Liability",count:85,premium:242153},
+    {name:"Life",count:74,premium:215},
+    {name:"Personal Auto",count:44,premium:152038},
+    {name:"Dwelling/Property",count:38,premium:142262},
+    {name:"Flood",count:16,premium:23392},
+    {name:"Commercial Property",count:7,premium:22845},
+    {name:"Bond",count:5,premium:815},
+    {name:"Inland Marine",count:4,premium:0},
+    {name:"Watercraft",count:4,premium:6951}
+  ],
+  by_producer: [
+    {name:"Mary Huggins",count:118,premium:369471},
+    {name:"Naomi Gentry",count:101,premium:397748},
+    {name:"Michelle Howe",count:82,premium:336398},
+    {name:"Jack Lebor",count:16,premium:53022},
+    {name:"Huggins Mary (New Kite)",count:9,premium:15154},
+    {name:"Christina Avila",count:9,premium:21330}
+  ],
+  avg_premiums: [
+    {name:"Workers' Comp",premium:5636},
+    {name:"Commercial Auto",premium:4642},
+    {name:"Homeowners",premium:3948},
+    {name:"Group Benefits",premium:3667},
+    {name:"Personal Auto",premium:2986},
+    {name:"General Liability",premium:2727},
+    {name:"Commercial Property",premium:2516},
+    {name:"Dwelling/Property",premium:2441},
+    {name:"Umbrella",premium:1824},
+    {name:"Mobile Homeowners",premium:1600},
+    {name:"Watercraft",premium:1216},
+    {name:"Flood",premium:1179},
+    {name:"Inland Marine",premium:1001},
+    {name:"Life",premium:500},
+    {name:"Bond",premium:293}
+  ],
+  avg_premium_map: {"Homeowners":3948,"Flood":1179,"Personal Auto":2986,"Umbrella":1824,"Life":500,"Dwelling/Property":2441,"General Liability":2727,"Commercial Auto":4642,"Workers' Comp":5636,"Commercial Property":2516,"Watercraft":1216,"Bond":293,"Inland Marine":1001,"Mobile Homeowners":1600,"Group Benefits":3667}
+};
+
+const COLORS = ["#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#F97316","#14B8A6"];
+
+function fmt(n) { return n >= 1000000 ? '$'+(n/1000000).toFixed(1)+'M' : n >= 1000 ? '$'+(n/1000).toFixed(0)+'K' : '$'+n; }
+function fmtFull(n) { return '$'+n.toLocaleString(); }
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  ['overview','products','producers'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  if (tab === 'products') renderProducts();
+  if (tab === 'producers') renderProducers();
+}
+
+function updateScenario() {
+  const pen = parseInt(document.getElementById('pen-slider').value);
+  const close = parseInt(document.getElementById('close-slider').value);
+  const p = pen/100, c = close/100;
+
+  document.getElementById('pen-val').textContent = pen+'%';
+  document.getElementById('close-val').textContent = close+'%';
+
+  const premium = Math.round(DATA.total_premium_potential * p * c);
+  const commission = Math.round(DATA.total_commission_potential * p * c);
+  const policies = Math.round(DATA.total_opps * p * c);
+  const accounts = Math.round(DATA.monoline_accounts * p);
+
+  document.getElementById('res-premium').textContent = fmtFull(premium);
+  document.getElementById('res-commission').textContent = fmtFull(commission);
+  document.getElementById('res-policies').textContent = policies.toLocaleString();
+  document.getElementById('res-accounts').textContent = accounts.toLocaleString();
+
+  document.getElementById('products-subtitle').textContent =
+    'Adjusted for '+pen+'% penetration × '+close+'% close rate';
+
+  if (!document.getElementById('tab-products').classList.contains('hidden')) {
+    renderProducts();
+  }
+}
+
+function makeBarHTML(items, valueKey, maxVal, colorStart) {
+  colorStart = colorStart || 0;
+  return items.map(function(item, i) {
+    const val = item[valueKey];
+    const pct = Math.max((val / maxVal) * 100, 2);
+    const color = COLORS[(i + colorStart) % COLORS.length];
+    return '<div class="bar-row">' +
+      '<div class="bar-label">' + item.name + '</div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>' +
+      '<div class="bar-amount">' + fmt(val) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// Render monoline table
+function renderMonolineTable() {
+  var html = '';
+  DATA.by_current_lob.forEach(function(row, i) {
+    html += '<tr><td><span class="dot" style="background:'+COLORS[i%COLORS.length]+'"></span>'+row.name+'</td>' +
+      '<td class="right muted">'+row.count+'</td>' +
+      '<td class="right bold">'+fmt(row.premium)+'</td></tr>';
+  });
+  document.getElementById('monoline-table').innerHTML = html;
+}
+
+function renderProducts() {
+  const pen = parseInt(document.getElementById('pen-slider').value) / 100;
+  const close = parseInt(document.getElementById('close-slider').value) / 100;
+
+  const adjusted = DATA.by_product.map(function(bp) {
+    return {
+      name: bp.name,
+      count: bp.count,
+      adj_premium: Math.round(bp.premium * pen * close),
+      adj_commission: Math.round(bp.commission * pen * close),
+      adj_count: Math.round(bp.count * pen * close)
+    };
+  });
+
+  const maxPrem = Math.max.apply(null, adjusted.map(function(a){return a.adj_premium}));
+  document.getElementById('product-bars').innerHTML = makeBarHTML(adjusted, 'adj_premium', maxPrem);
+
+  // Product table
+  var total_policies = 0, total_prem = 0, total_comm = 0;
+  var tableHTML = '';
+  adjusted.forEach(function(row, i) {
+    var avgP = DATA.avg_premium_map[row.name] || 0;
+    total_policies += row.adj_count;
+    total_prem += row.adj_premium;
+    total_comm += row.adj_commission;
+    tableHTML += '<tr><td><span class="dot" style="background:'+COLORS[i%COLORS.length]+'"></span>'+row.name+'</td>' +
+      '<td class="right muted">'+fmtFull(avgP)+'</td>' +
+      '<td class="right muted">'+row.count+'</td>' +
+      '<td class="right green">'+fmt(row.adj_premium)+'</td>' +
+      '<td class="right amber">'+fmt(row.adj_commission)+'</td></tr>';
+  });
+  tableHTML += '<tr class="total-row"><td>Total</td><td></td>' +
+    '<td class="right">'+total_policies+'</td>' +
+    '<td class="right green">'+fmt(total_prem)+'</td>' +
+    '<td class="right amber">'+fmt(total_comm)+'</td></tr>';
+  document.getElementById('product-table').innerHTML = tableHTML;
+
+  // Avg premium bars
+  var maxAvg = Math.max.apply(null, DATA.avg_premiums.map(function(a){return a.premium}));
+  document.getElementById('avg-premium-bars').innerHTML = makeBarHTML(DATA.avg_premiums, 'premium', maxAvg);
+}
+
+function renderProducers() {
+  var maxCount = Math.max.apply(null, DATA.by_producer.map(function(p){return p.count}));
+  var barsHTML = DATA.by_producer.map(function(p, i) {
+    var pct = Math.max((p.count / maxCount) * 100, 3);
+    return '<div class="bar-row">' +
+      '<div class="bar-label">'+p.name+'</div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+COLORS[i%COLORS.length]+'">'+p.count+'</div></div>' +
+      '<div class="bar-amount">'+fmt(p.premium)+'</div>' +
+    '</div>';
+  }).join('');
+  document.getElementById('producer-bars').innerHTML = barsHTML;
+
+  var detailHTML = DATA.by_producer.map(function(p, i) {
+    return '<div class="producer-row">' +
+      '<div class="producer-info">' +
+        '<div class="producer-rank" style="background:'+COLORS[i%COLORS.length]+'22;color:'+COLORS[i%COLORS.length]+'">'+(i+1)+'</div>' +
+        '<div><div class="producer-name">'+p.name+'</div><div class="producer-count">'+p.count+' monoline accounts</div></div>' +
+      '</div>' +
+      '<div class="producer-premium">' +
+        '<div class="producer-premium-val">'+fmt(p.premium)+'</div>' +
+        '<div class="producer-premium-label">current premium</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  document.getElementById('producer-detail').innerHTML = detailHTML;
+}
+
+// Initialize
+renderMonolineTable();
+</script>
+</body>
+</html>
